@@ -15,14 +15,13 @@ import numpy as np
 
 class BaseRadiation:
 
-    def __init__(self, locations, pops_x, pops_y, pops_val, cheap = True, Nc = 0.5):
+    def __init__(self, locations, pops_x, pops_y, pops_val, Nc = None):
         self._radius_size = None
         self._N = len(pops_x)
-        self._Nc = Nc # total number movers
+        self._Nc = Nc # total num movers
         self._pop_calc = RadiusCalculator(pops_x, pops_y, pops_val)
         self.results = None
         self.locations = locations
-        self.cheap = cheap
 
     def _tot_pop_radius_btwn(self, i, j):
         return self._pop_calc.total_vals_in_radius_between(i,j)
@@ -31,11 +30,8 @@ class BaseRadiation:
         return self._pop_calc._get_val(loc)
 
     def num_commuters_starting_at(self, i):
-        if self.cheap:
-            m_i = self._pop_at_loc(i)
-            return m_i * (self._Nc / self._N)
-        else: # not yet implemented
-            return None
+        m_i = self._pop_at_loc(i)
+        return m_i * (self._Nc / self._N)
 
     def _model(self):
         return None # each child overloads
@@ -62,12 +58,18 @@ class Radiation(BaseRadiation):
     as implemented in simini et al 2012
     '''
 
-    def _model(self, pair):
+    def _model(self, pair, nc = None):
         i, j = pair
         m_i = self._pop_at_loc(i)
         n_j = self._pop_at_loc(j)
         s_ij = self._tot_pop_radius_btwn(i,j) - m_i - n_j
-        T_i = self.num_commuters_starting_at(i)
+        if nc:
+            T_i = nc
+        elif not self._Nc:
+                raise ValueError('Must assign value for Nc')
+        else:
+            T_i = self.num_commuters_starting_at(i)
+
         result = T_i * ( (m_i * n_j) / ( (m_i + s_ij) * (m_i + n_j + s_ij) ) )
         return (i,j,result)
 
@@ -75,12 +77,19 @@ class Radiation(BaseRadiation):
         model_func = self._make_model_func()
         pairs = list(combinations(self.locations_xy_list, 2))
         return [model_func(x) for x in pairs]
-        #return model_func(pairs)
 
-class Production(BaseRadiation): # not yet implemented
+class BaseGeneralized(BaseRadiation): # not yet implemented
     def __init__(self):
         pass
 
-class Attraction(BaseRadiation): # not yet implemented
+class ProductionIntervention(BaseGeneralized): # not yet implemented
+    def __init__(self):
+        pass
+
+class AttractionIntervention(BaseGeneralized): # not yet implemented
+    def __init__(self):
+        pass
+
+class AttractionCompetition(BaseGeneralized): # not yet implemented
     def __init__(self):
         pass
