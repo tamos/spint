@@ -17,8 +17,9 @@ class BaseRadiation:
 
     def __init__(self, locations, pops_x, pops_y, pops_val, Nc = None):
         self._radius_size = None
-        self._N = len(pops_x)
+        self._N = sum(pops_val)
         self._Nc = Nc # total num movers
+        print('... Creating RadiusCalculator Object...')
         self._pop_calc = RadiusCalculator(pops_x, pops_y, pops_val)
         self.results = None
         self.locations = locations
@@ -45,7 +46,7 @@ class BaseRadiation:
         # ref https://stackoverflow.com/questions/7701429/efficient-evaluation-of-a-function-at-every-cell-of-a-numpy-array
         # ref https://stackoverflow.com/questions/4231190/python-numpy-tuples-as-elements-of-an-array
 
-    def calculate(self):
+    def calculate_all(self):
         self.results = self._run_model()
 
     @property
@@ -62,11 +63,11 @@ class Radiation(BaseRadiation):
         i, j = pair
         m_i = self._pop_at_loc(i)
         n_j = self._pop_at_loc(j)
-        s_ij = self._tot_pop_radius_btwn(i,j) - m_i - n_j
+        s_ij = max(0, self._tot_pop_radius_btwn(i,j) - m_i - n_j)
         if nc:
             T_i = nc
         elif not self._Nc:
-                raise ValueError('Must assign value for Nc')
+                raise ValueError('Must assign or supply value for Nc')
         else:
             T_i = self.num_commuters_starting_at(i)
 
@@ -76,7 +77,7 @@ class Radiation(BaseRadiation):
     def _run_model(self):
         model_func = self._make_model_func()
         pairs = list(combinations(self.locations_xy_list, 2))
-        return [model_func(x) for x in pairs]
+        return map(model_func, pairs)
 
 class BaseGeneralized(BaseRadiation): # not yet implemented
     def __init__(self):
